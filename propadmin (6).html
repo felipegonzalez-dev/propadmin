@@ -1,0 +1,2219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PropAdmin</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f4f0;
+  --surface: #ffffff;
+  --border: #d8d6d0;
+  --border2: #ebe9e4;
+  --text: #1a1916;
+  --muted: #7a7870;
+  --accent: #1a1916;
+  --green: #1a6641;
+  --green-bg: #eaf4ee;
+  --orange: #b84c00;
+  --orange-bg: #fdf0e6;
+  --red: #b81c1c;
+  --red-bg: #fdeaea;
+  --blue: #1a4580;
+  --blue-bg: #eaeefd;
+  --font: 'IBM Plex Sans', sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  min-height: 100vh;
+}
+
+/* ── LAYOUT ── */
+.app { display: flex; min-height: 100vh; }
+
+.sidebar {
+  width: 220px;
+  min-height: 100vh;
+  background: var(--text);
+  color: #f5f4f0;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 100;
+}
+
+.sidebar-logo {
+  padding: 24px 20px 20px;
+  border-bottom: 1px solid #333;
+}
+.sidebar-logo h1 {
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.5px;
+  color: #f5f4f0;
+}
+.sidebar-logo p {
+  font-size: 11px;
+  color: #888;
+  margin-top: 3px;
+}
+
+.sidebar-nav { padding: 16px 12px; flex: 1; }
+.nav-section {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #555;
+  padding: 12px 8px 6px;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #aaa;
+  font-size: 12.5px;
+  font-weight: 400;
+  transition: all .12s;
+  margin-bottom: 1px;
+}
+.nav-item:hover { background: #2a2a28; color: #f5f4f0; }
+.nav-item.active { background: #f5f4f0; color: var(--text); font-weight: 500; }
+.nav-item svg { width: 14px; height: 14px; flex-shrink: 0; opacity: .7; }
+.nav-item.active svg { opacity: 1; }
+
+.sidebar-entities { padding: 12px; border-top: 1px solid #333; }
+.entity-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-bottom: 2px;
+  transition: background .12s;
+}
+.entity-chip:hover { background: #222; }
+.entity-chip.active { background: #222; }
+.entity-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.entity-name { font-size: 11px; color: #bbb; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.entity-chip.active .entity-name { color: #f5f4f0; }
+.entity-count { font-family: var(--mono); font-size: 10px; color: #555; }
+
+/* ── MAIN ── */
+.main {
+  margin-left: 220px;
+  flex: 1;
+  padding: 0;
+  min-height: 100vh;
+}
+
+.page-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 18px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.page-title { font-size: 15px; font-weight: 600; }
+.page-sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
+.header-actions { display: flex; gap: 8px; align-items: center; }
+
+.page-content { padding: 24px 28px; }
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 4px;
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all .12s;
+  white-space: nowrap;
+}
+.btn-primary { background: var(--text); color: #f5f4f0; border-color: var(--text); }
+.btn-primary:hover { background: #333; }
+.btn-outline { background: transparent; color: var(--text); border-color: var(--border); }
+.btn-outline:hover { border-color: var(--text); background: var(--bg); }
+.btn-sm { padding: 5px 10px; font-size: 11px; }
+.btn-ghost { background: transparent; color: var(--muted); border-color: transparent; padding: 4px 8px; }
+.btn-ghost:hover { color: var(--text); background: var(--bg); }
+
+/* ── TABLES ── */
+.table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+table { width: 100%; border-collapse: collapse; }
+thead tr { background: var(--bg); border-bottom: 1px solid var(--border); }
+th {
+  padding: 9px 14px;
+  text-align: left;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+td { padding: 10px 14px; border-bottom: 1px solid var(--border2); font-size: 12.5px; vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #fafaf8; }
+.td-mono { font-family: var(--mono); font-size: 12px; }
+.td-right { text-align: right; }
+.td-center { text-align: center; }
+
+/* ── BADGES ── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.badge-pagado    { background: var(--green-bg);  color: var(--green); }
+.badge-pendiente { background: var(--orange-bg); color: var(--orange); }
+.badge-vencido   { background: var(--red-bg);    color: var(--red); }
+.badge-exento    { background: var(--blue-bg);   color: var(--blue); }
+
+/* ── STATS ── */
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+.stat-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px 18px;
+}
+.stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 6px; }
+.stat-value { font-family: var(--mono); font-size: 20px; font-weight: 500; }
+.stat-value.green  { color: var(--green); }
+.stat-value.orange { color: var(--orange); }
+.stat-value.red    { color: var(--red); }
+
+/* ── CARDS ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.card-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg);
+}
+.card-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); }
+.card-body { padding: 16px; }
+
+/* ── MODALES ── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.4);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 480px;
+  max-width: 96vw;
+  max-height: 92vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,.2);
+}
+.modal-header {
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--border2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.modal-title { font-size: 14px; font-weight: 600; }
+.modal-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+.modal-close:hover { background: var(--bg); color: var(--text); }
+.modal-body { padding: 20px; }
+.modal-footer { padding: 14px 20px; border-top: 1px solid var(--border2); display: flex; justify-content: flex-end; gap: 8px; }
+
+/* ── FORMS ── */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-grid .full { grid-column: 1 / -1; }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); }
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: var(--font);
+  font-size: 13px;
+  background: var(--surface);
+  color: var(--text);
+  outline: none;
+  transition: border-color .12s;
+}
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus { border-color: var(--text); }
+
+/* ── ENTITY TAG ── */
+.ent-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+/* ── PROP DOT ── */
+.prop-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.prop-dot::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--dot-color, #888);
+  flex-shrink: 0;
+}
+
+/* ── MONTH NAV ── */
+.month-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border2);
+  background: var(--bg);
+}
+.month-nav-label { font-family: var(--mono); font-size: 13px; font-weight: 500; min-width: 120px; text-align: center; }
+.month-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  width: 28px; height: 28px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  transition: all .1s;
+}
+.month-btn:hover { border-color: var(--text); color: var(--text); }
+
+/* ── EMPTY STATE ── */
+.empty-state { text-align: center; padding: 48px 24px; color: var(--muted); }
+.empty-state p { font-size: 13px; margin-top: 8px; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--text);
+  color: #f5f4f0;
+  padding: 10px 18px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  z-index: 9999;
+  animation: slideUp .2s ease;
+  box-shadow: 0 4px 16px rgba(0,0,0,.2);
+}
+.toast.error { background: var(--red); }
+.toast.ok    { background: var(--green); }
+@keyframes slideUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+/* ── FILTER BAR ── */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border2);
+  background: var(--bg);
+  flex-wrap: wrap;
+}
+.filter-bar select,
+.filter-bar input {
+  padding: 5px 9px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-family: var(--font);
+  font-size: 12px;
+  background: var(--surface);
+  color: var(--text);
+  outline: none;
+}
+
+/* ── COLOR PICKER ── */
+.color-row { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 4px; }
+.color-swatch {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: transform .1s;
+}
+.color-swatch.sel { border-color: var(--text); transform: scale(1.2); }
+
+/* ── FLUJO DE CAJA ── */
+.fc-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border2);
+  font-size: 12px;
+}
+.fc-bar-row:last-child { border-bottom: none; }
+.fc-month { font-family: var(--mono); font-size: 12px; width: 90px; flex-shrink: 0; }
+.fc-bar-wrap { flex: 1; height: 14px; background: var(--bg); border-radius: 2px; overflow: hidden; }
+.fc-bar { height: 100%; border-radius: 2px; transition: width .3s; }
+.fc-amount { font-family: var(--mono); font-size: 12px; width: 100px; text-align: right; flex-shrink: 0; }
+.fc-current { background: #fafaf7; font-weight: 600; }
+
+/* ── RESUMEN ── */
+.resumen-section { margin-bottom: 24px; }
+.resumen-entity-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  font-weight: 600;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+.resumen-total { margin-left: auto; font-family: var(--mono); font-size: 13px; }
+
+/* ── TABS ── */
+.tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); background: var(--surface); }
+.tab-btn {
+  padding: 10px 18px;
+  font-family: var(--font);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  border: none;
+  background: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all .12s;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--text); border-bottom-color: var(--text); }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ══ SIDEBAR ══ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <h1>PropAdmin</h1>
+    <p>Control de propiedades</p>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">Vistas</div>
+    <div class="nav-item active" onclick="showView('dashboard')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </div>
+    <div class="nav-item" onclick="showView('cuentas')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Cuentas
+    </div>
+    <div class="nav-item" onclick="showView('contribuciones')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><line x1="12" y1="6" x2="12" y2="18"/></svg>
+      Contribuciones SII
+    </div>
+    <div class="nav-item" onclick="showView('flujo')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
+      Flujo de caja
+    </div>
+    <div class="nav-item" onclick="showView('resumen')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Resumen mensual
+    </div>
+    <div class="nav-item" onclick="showView('historial')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+      Historial
+    </div>
+    <div class="nav-item" onclick="showView('gmail')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      Gmail / Avisos
+    </div>
+    <div class="nav-section" style="margin-top:8px">Configuración</div>
+    <div class="nav-item" onclick="showView('propiedades')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+      Propiedades
+    </div>
+  </nav>
+  <div class="sidebar-entities" id="sidebar-entities"></div>
+</aside>
+
+<!-- ══ MAIN ══ -->
+<main class="main">
+
+<!-- ── DASHBOARD ── -->
+<div id="view-dashboard">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Dashboard</div>
+      <div class="page-sub" id="dash-sub">Cargando...</div>
+    </div>
+    <div class="header-actions">
+      <select id="dash-entity" onchange="renderDashboard()" style="padding:6px 10px;border:1px solid var(--border);border-radius:4px;font-family:var(--font);font-size:12px;background:var(--surface)">
+        <option value="">Todas las sociedades</option>
+      </select>
+    </div>
+  </div>
+  <div class="page-content">
+    <div class="stats-row" id="dash-stats"></div>
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Cuentas pendientes / vencidas</span></div>
+        <table><thead><tr><th>Servicio</th><th>Propiedad</th><th>Sociedad</th><th>Vence</th><th class="td-right">Monto</th><th>Estado</th><th></th></tr></thead>
+        <tbody id="dash-table"></tbody></table>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Avance del mes</span></div>
+        <div class="card-body" id="dash-progress"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── CUENTAS ── -->
+<div id="view-cuentas" style="display:none">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Cuentas</div>
+      <div class="page-sub">Gastos mensuales y cuotas de administración</div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-primary btn-sm" onclick="openBillModal()">+ Nueva cuenta</button>
+    </div>
+  </div>
+  <div class="card" style="margin:20px 28px">
+    <div class="month-nav">
+      <button class="month-btn" onclick="prevMonth()">‹</button>
+      <span class="month-nav-label" id="month-label"></span>
+      <button class="month-btn" onclick="nextMonth()">›</button>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <select id="f-entity" onchange="renderCuentas()" style="padding:5px 9px;border:1px solid var(--border);border-radius:3px;font-family:var(--font);font-size:12px;background:var(--surface)"><option value="">Todas las sociedades</option></select>
+        <select id="f-prop" onchange="renderCuentas()" style="padding:5px 9px;border:1px solid var(--border);border-radius:3px;font-family:var(--font);font-size:12px;background:var(--surface)"><option value="">Todas las propiedades</option></select>
+        <select id="f-status" onchange="renderCuentas()" style="padding:5px 9px;border:1px solid var(--border);border-radius:3px;font-family:var(--font);font-size:12px;background:var(--surface)">
+          <option value="">Todos los estados</option>
+          <option value="pendiente">Pendiente</option>
+          <option value="pagado">Pagado</option>
+          <option value="vencido">Vencido</option>
+        </select>
+      </div>
+    </div>
+    <div id="cuentas-body"></div>
+  </div>
+</div>
+
+<!-- ── CONTRIBUCIONES ── -->
+<div id="view-contribuciones" style="display:none">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Contribuciones SII</div>
+      <div class="page-sub">Impuesto territorial — 4 cuotas anuales</div>
+    </div>
+    <div class="header-actions">
+      <select id="contrib-year" onchange="renderContrib()" style="padding:6px 10px;border:1px solid var(--border);border-radius:4px;font-family:var(--font);font-size:12px;background:var(--surface)"></select>
+      <a href="https://contribuciones.tgr.cl/" target="_blank" class="btn btn-outline btn-sm">Pagar en TGR ↗</a>
+      <a href="https://zeus.sii.cl/avalu_cgi/br/brc803.sh" target="_blank" class="btn btn-outline btn-sm">Consultar SII ↗</a>
+    </div>
+  </div>
+  <div style="margin:20px 28px">
+    <div id="contrib-body"></div>
+  </div>
+</div>
+
+<!-- ── FLUJO DE CAJA ── -->
+<div id="view-flujo" style="display:none">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Flujo de caja</div>
+      <div class="page-sub">Proyección de egresos — 12 meses</div>
+    </div>
+    <div class="header-actions">
+      <select id="flujo-entity" onchange="renderFlujo()" style="padding:6px 10px;border:1px solid var(--border);border-radius:4px;font-family:var(--font);font-size:12px;background:var(--surface)"><option value="">Todas las sociedades</option></select>
+    </div>
+  </div>
+  <div style="margin:20px 28px;display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Egresos mensuales</span></div>
+      <div id="flujo-bars"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Tabla resumen</span></div>
+      <table><thead><tr><th>Mes</th><th class="td-right">Total</th><th class="td-right">Pagado</th><th class="td-right">Pendiente</th></tr></thead>
+      <tbody id="flujo-table"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- ── RESUMEN MENSUAL ── -->
+<div id="view-resumen" style="display:none">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Resumen mensual</div>
+      <div class="page-sub">Informe por sociedad para enviar</div>
+    </div>
+    <div class="header-actions">
+      <select id="res-month" onchange="renderResumen()" style="padding:6px 10px;border:1px solid var(--border);border-radius:4px;font-family:var(--font);font-size:12px;background:var(--surface)"></select>
+      <select id="res-year"  onchange="renderResumen()" style="padding:6px 10px;border:1px solid var(--border);border-radius:4px;font-family:var(--font);font-size:12px;background:var(--surface)"></select>
+      <button class="btn btn-outline btn-sm" onclick="printResumen()">🖨 Imprimir / PDF</button>
+      <button class="btn btn-primary btn-sm" onclick="exportResumen()">⬇ Exportar HTML</button>
+    </div>
+  </div>
+  <div style="margin:20px 28px" id="resumen-body"></div>
+</div>
+
+<!-- ── HISTORIAL ── -->
+<div id="view-historial" style="display:none">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Historial</div>
+      <div class="page-sub">Todos los registros</div>
+    </div>
+  </div>
+  <div class="card" style="margin:20px 28px">
+    <div class="filter-bar">
+      <select id="h-entity" onchange="renderHistorial()" style="padding:5px 9px;border:1px solid var(--border);border-radius:3px;font-family:var(--font);font-size:12px;background:var(--surface)"><option value="">Todas las sociedades</option></select>
+      <select id="h-prop"   onchange="renderHistorial()" style="padding:5px 9px;border:1px solid var(--border);border-radius:3px;font-family:var(--font);font-size:12px;background:var(--surface)"><option value="">Todas las propiedades</option></select>
+      <select id="h-status" onchange="renderHistorial()" style="padding:5px 9px;border:1px solid var(--border);border-radius:3px;font-family:var(--font);font-size:12px;background:var(--surface)"><option value="">Todos los estados</option><option value="pagado">Pagado</option><option value="pendiente">Pendiente</option><option value="vencido">Vencido</option></select>
+      <select id="h-year"   onchange="renderHistorial()" style="padding:5px 9px;border:1px solid var(--border);border-radius:3px;font-family:var(--font);font-size:12px;background:var(--surface)"></select>
+      <span id="h-count" style="margin-left:auto;font-size:11px;color:var(--muted)"></span>
+    </div>
+    <div style="overflow-x:auto">
+      <table><thead><tr><th>Mes</th><th>Servicio</th><th>Propiedad</th><th>Sociedad</th><th class="td-right">Monto</th><th>Estado</th><th>Vencimiento</th><th>Notas</th><th></th></tr></thead>
+      <tbody id="historial-body"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- ── PROPIEDADES ── -->
+<div id="view-propiedades" style="display:none">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Propiedades</div>
+      <div class="page-sub">Gestión del portafolio</div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-primary btn-sm" onclick="openPropModal()">+ Nueva propiedad</button>
+    </div>
+  </div>
+  <div style="margin:20px 28px" id="props-body"></div>
+</div>
+
+<!-- ── GMAIL / AVISOS ── -->
+<div id="view-gmail" style="display:none">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Gmail — Avisos de cobro</div>
+      <div class="page-sub">Escanea tu correo, extrae montos y clasifica a cada propiedad</div>
+    </div>
+    <div class="header-actions">
+      <div id="gmail-status-pill" onclick="gmailStatusClick()" style="display:flex;align-items:center;gap:7px;padding:6px 14px;border-radius:4px;border:1px solid var(--border);cursor:pointer;font-size:12px;font-weight:500;transition:all .12s" title="Clic para conectar/desconectar">
+        <span id="gmail-dot" style="width:7px;height:7px;border-radius:50%;background:var(--red);flex-shrink:0"></span>
+        <span id="gmail-status-txt">Gmail no conectado</span>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="openGmailConfig()">⚙ Configurar</button>
+      <button class="btn btn-primary btn-sm" id="scan-btn" onclick="scanGmail()" disabled>🔍 Escanear correos</button>
+    </div>
+  </div>
+  <div class="page-content">
+
+    <!-- Scan controls -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header"><span class="card-title">Parámetros de búsqueda</span></div>
+      <div class="card-body" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+        <div class="form-group" style="flex:1;min-width:160px">
+          <label>Período</label>
+          <select id="scan-days" style="padding:7px 10px;border:1px solid var(--border);border-radius:4px;font-family:var(--font);font-size:13px">
+            <option value="15">Últimos 15 días</option>
+            <option value="30" selected>Últimos 30 días</option>
+            <option value="60">Últimos 60 días</option>
+            <option value="90">Últimos 90 días</option>
+          </select>
+        </div>
+        <div class="form-group" style="flex:2;min-width:200px">
+          <label>Remitente (opcional)</label>
+          <input type="text" id="scan-from" placeholder="ej: administracion@edificio.cl, sii.cl" style="padding:7px 10px;border:1px solid var(--border);border-radius:4px;font-family:var(--font);font-size:13px">
+        </div>
+        <div class="form-group" style="flex:2;min-width:200px">
+          <label>Palabras clave (opcional)</label>
+          <input type="text" id="scan-keywords" placeholder="ej: cobro, aviso, gastos comunes" style="padding:7px 10px;border:1px solid var(--border);border-radius:4px;font-family:var(--font);font-size:13px">
+        </div>
+        <button class="btn btn-primary" id="scan-btn2" onclick="scanGmail()" disabled style="align-self:flex-end">🔍 Escanear</button>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div id="gmail-results">
+      <div class="empty-state" style="padding:60px">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" style="opacity:.2;margin-bottom:12px"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        <p>Conecta Gmail y haz clic en "Escanear correos"</p>
+      </div>
+    </div>
+
+    <!-- Pending to classify -->
+    <div id="pending-classify" style="display:none;margin-top:20px">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📋 Pendientes de clasificar</span>
+          <button class="btn btn-primary btn-sm" onclick="registerAllMatched()">✓ Registrar todos los sugeridos</button>
+        </div>
+        <div id="pending-list"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</main>
+</div>
+
+<!-- ══ MODAL: CUENTA ══ -->
+<div id="bill-modal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title" id="bill-modal-title">Nueva cuenta</span>
+      <button class="modal-close" onclick="closeBillModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="bill-id">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Tipo de servicio</label>
+          <select id="bill-service">
+            <option>Electricidad</option><option>Agua / Gas</option><option>Internet / TV</option>
+            <option>Administración</option><option>Seguro</option><option>Impuesto predial</option>
+            <option>Jardinero</option><option>Otro</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Propiedad</label>
+          <select id="bill-prop"></select>
+        </div>
+        <div class="form-group">
+          <label>Monto (CLP)</label>
+          <input type="number" id="bill-amount" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label>Fecha vencimiento</label>
+          <input type="date" id="bill-due">
+        </div>
+        <div class="form-group">
+          <label>Estado</label>
+          <select id="bill-status">
+            <option value="pendiente">Pendiente</option>
+            <option value="pagado">Pagado</option>
+            <option value="vencido">Vencido</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Fecha de pago</label>
+          <input type="date" id="bill-paiddate">
+        </div>
+        <div class="form-group full">
+          <label>Notas / N° comprobante</label>
+          <input type="text" id="bill-notes" placeholder="Opcional">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeBillModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveBill()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: PROPIEDAD ══ -->
+<div id="prop-modal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title" id="prop-modal-title">Nueva propiedad</span>
+      <button class="modal-close" onclick="closePropModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="prop-id">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Nombre</label>
+          <input type="text" id="prop-name" placeholder="Casa Las Condes">
+        </div>
+        <div class="form-group">
+          <label>Sociedad propietaria</label>
+          <select id="prop-entity"></select>
+        </div>
+        <div class="form-group">
+          <label>ROL SII</label>
+          <input type="text" id="prop-rol" placeholder="123-45">
+        </div>
+        <div class="form-group">
+          <label>Comuna</label>
+          <input type="text" id="prop-commune" placeholder="Las Condes">
+        </div>
+        <div class="form-group full">
+          <label>Dirección</label>
+          <input type="text" id="prop-address" placeholder="Av. Principal 123">
+        </div>
+        <div class="form-group full">
+          <label>Es subunidad de (opcional)</label>
+          <select id="prop-parent">
+            <option value="">— Propiedad independiente —</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label>Remitentes Gmail asociados</label>
+          <input type="text" id="prop-senders" placeholder="admin@edificio.cl, cobros@empresa.cl (separados por coma)">
+          <span style="font-size:10px;color:var(--muted);margin-top:3px">Los correos de estos remitentes se asignarán automáticamente a esta propiedad</span>
+        </div>
+        <div class="form-group full">
+          <label>Color</label>
+          <div class="color-row" id="color-picker"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closePropModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveProp()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: CUOTA SII ══ -->
+<div id="sii-modal" class="modal-overlay">
+  <div class="modal-box" style="width:400px">
+    <div class="modal-header">
+      <span class="modal-title" id="sii-modal-title">Registrar cuota</span>
+      <button class="modal-close" onclick="closeSiiModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Monto (CLP)</label>
+          <input type="number" id="sii-amount" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label>Estado</label>
+          <select id="sii-status">
+            <option value="pendiente">Pendiente</option>
+            <option value="pagado">Pagado</option>
+            <option value="exento">Exento</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Fecha de pago</label>
+          <input type="date" id="sii-paiddate">
+        </div>
+        <div class="form-group">
+          <label>N° Comprobante TGR</label>
+          <input type="text" id="sii-ref" placeholder="Referencia">
+        </div>
+        <div class="form-group full">
+          <label>Notas</label>
+          <input type="text" id="sii-notes" placeholder="Opcional">
+        </div>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:8px">
+        <a href="https://www4.sii.cl/cuotaanualbienesraicespubinternetui/" target="_blank" class="btn btn-outline btn-sm">Ver en SII ↗</a>
+        <a href="https://contribuciones.tgr.cl/" target="_blank" class="btn btn-outline btn-sm">Pagar en TGR ↗</a>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeSiiModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveSii()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: GMAIL CONFIG ══ -->
+<div id="gmail-config-modal" class="modal-overlay">
+  <div class="modal-box" style="width:520px">
+    <div class="modal-header">
+      <span class="modal-title">⚙ Configurar Gmail</span>
+      <button class="modal-close" onclick="closeGmailConfig()">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:14px;margin-bottom:16px;font-size:12px;line-height:1.7">
+        <strong>Cómo obtener el Client ID (5 min):</strong><br>
+        1. <a href="https://console.cloud.google.com" target="_blank" style="color:var(--blue)">console.cloud.google.com</a> → Nuevo proyecto → nombre: <code>PropAdmin</code><br>
+        2. APIs &amp; Services → Enable APIs → <strong>Gmail API</strong> → Activar<br>
+        3. Credentials → + Create Credentials → <strong>OAuth 2.0 Client ID</strong><br>
+        4. Si pide pantalla de consentimiento → External → solo nombre y email<br>
+        5. Application type: <strong>Web application</strong><br>
+        6. Authorized JavaScript origins: <code>null</code><br>
+        7. Copia el Client ID y pégalo abajo
+      </div>
+      <div class="form-group">
+        <label>Google Client ID</label>
+        <input type="text" id="gmail-client-id-input" placeholder="xxxxxxx.apps.googleusercontent.com" style="font-family:var(--mono);font-size:12px">
+      </div>
+      <div id="gmail-config-msg" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeGmailConfig()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveGmailClientId()">Guardar y conectar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://accounts.google.com/gsi/client" async></script>
+<script>
+// ══════════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════════
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const COLORS = ['#2d6a4f','#1d3557','#9b2226','#7b4f12','#4a4e69','#0077b6','#6a0572','#3d405b','#a4133c','#386641'];
+const SERVICES = ['Electricidad','Agua / Gas','Internet / TV','Administración','Seguro','Impuesto predial','Jardinero','Otro'];
+const CUOTAS = [
+  { key:'q1', nombre:'1ª Cuota', mes:'Abril',      mesIdx:3  },
+  { key:'q2', nombre:'2ª Cuota', mes:'Junio',       mesIdx:5  },
+  { key:'q3', nombre:'3ª Cuota', mes:'Septiembre',  mesIdx:8  },
+  { key:'q4', nombre:'4ª Cuota', mes:'Noviembre',   mesIdx:10 },
+];
+
+// State
+let props     = JSON.parse(localStorage.getItem('pa2_props')    || '[]');
+let bills     = JSON.parse(localStorage.getItem('pa2_bills')    || '[]');
+let contribs  = JSON.parse(localStorage.getItem('pa2_contribs') || '{}');
+let entities  = JSON.parse(localStorage.getItem('pa2_entities') || '[]');
+
+let curMonth = new Date().getMonth();
+let curYear  = new Date().getFullYear();
+let selColor = COLORS[0];
+let editingBillId = null;
+let editingPropId = null;
+let editingSii    = null; // {propId, year, key}
+
+// ── Seed default entities if empty ──
+function ensureEntities() {
+  if (entities.length) return;
+  entities = [
+    { id: 'e1', name: 'Personal',                  short: 'Personal', color: '#2d6a4f' },
+    { id: 'e2', name: 'Asesorías Profesionales GV', short: 'GV',      color: '#1d3557' },
+    { id: 'e3', name: 'Felipe González EIRL',       short: 'FG EIRL', color: '#9b2226' },
+  ];
+  save();
+}
+
+// ══════════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════════
+const uid    = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
+const fmtCLP = n  => '$' + Math.round(n || 0).toLocaleString('es-CL');
+const getProp   = id => props.find(p => p.id === id) || { name: '?', color: '#888', entityId: '' };
+const getEntity = id => entities.find(e => e.id === id) || { name: '?', color: '#888', short: '?' };
+
+function badge(status) {
+  const map = { pagado: 'badge-pagado', pendiente: 'badge-pendiente', vencido: 'badge-vencido', exento: 'badge-exento' };
+  const lbl = { pagado: 'Pagado', pendiente: 'Pendiente', vencido: 'Vencido', exento: 'Exento' };
+  return `<span class="badge ${map[status] || ''}">${lbl[status] || status}</span>`;
+}
+
+function propDot(propId) {
+  const p = getProp(propId);
+  return `<span class="prop-dot" style="--dot-color:${p.color}">${p.name}</span>`;
+}
+
+function entTag(entityId) {
+  const e = getEntity(entityId);
+  return `<span class="ent-tag"><span style="width:7px;height:7px;border-radius:50%;background:${e.color};display:inline-block"></span>${e.short}</span>`;
+}
+
+function toast(msg, type = 'ok') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2800);
+}
+
+function save() {
+  localStorage.setItem('pa2_props',    JSON.stringify(props));
+  localStorage.setItem('pa2_bills',    JSON.stringify(bills));
+  localStorage.setItem('pa2_contribs', JSON.stringify(contribs));
+  localStorage.setItem('pa2_entities', JSON.stringify(entities));
+}
+
+function getContrib(propId, year, key) {
+  return contribs[propId]?.[year]?.[key] || null;
+}
+function setContrib(propId, year, key, data) {
+  if (!contribs[propId]) contribs[propId] = {};
+  if (!contribs[propId][year]) contribs[propId][year] = {};
+  contribs[propId][year][key] = data;
+  save();
+}
+
+// Auto-mark overdue
+function autoVencidos() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  bills.forEach(b => {
+    if (b.status === 'pendiente' && b.due) {
+      const d = new Date(b.due);
+      if (!isNaN(d) && d < today) b.status = 'vencido';
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════
+const VIEWS = ['dashboard','cuentas','contribuciones','flujo','resumen','historial','propiedades','gmail'];
+
+function showView(v) {
+  VIEWS.forEach(x => {
+    const el = document.getElementById('view-' + x);
+    if (el) el.style.display = x === v ? 'block' : 'none';
+  });
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelector(`.nav-item[onclick*="'${v}'"]`)?.classList.add('active');
+  if (v === 'dashboard')      renderDashboard();
+  if (v === 'cuentas')        { populateFilters(); renderCuentas(); updateMonthLabel(); }
+  if (v === 'contribuciones') renderContrib();
+  if (v === 'flujo')          renderFlujo();
+  if (v === 'resumen')        renderResumen();
+  if (v === 'historial')      { populateHistFilters(); renderHistorial(); }
+  if (v === 'propiedades')    renderProps();
+  if (v === 'gmail')          { updateGmailStatusUI(); if (gmailClientId && !gmailIsConnected()) gmailAuthorize(); }
+}
+
+// ══════════════════════════════════════════════════
+// SIDEBAR ENTITIES
+// ══════════════════════════════════════════════════
+function renderSidebar() {
+  const el = document.getElementById('sidebar-entities');
+  if (!el) return;
+  el.innerHTML = entities.map(e => {
+    const count = props.filter(p => p.entityId === e.id).length;
+    return `<div class="entity-chip">
+      <span class="entity-dot" style="background:${e.color}"></span>
+      <span class="entity-name">${e.name}</span>
+      <span class="entity-count">${count}</span>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════════════
+function renderDashboard() {
+  autoVencidos();
+  const entFilter = document.getElementById('dash-entity')?.value || '';
+  const now = new Date();
+  const m = now.getMonth(), y = now.getFullYear();
+
+  // Populate entity select
+  const sel = document.getElementById('dash-entity');
+  if (sel && sel.options.length === 1) {
+    entities.forEach(e => {
+      const o = document.createElement('option');
+      o.value = e.id; o.textContent = e.name;
+      sel.appendChild(o);
+    });
+  }
+
+  let monthBills = bills.filter(b => b.month === m && b.year === y);
+  if (entFilter) monthBills = monthBills.filter(b => getProp(b.propId).entityId === entFilter);
+
+  const total   = monthBills.reduce((s,b) => s+(b.amount||0), 0);
+  const pagado  = monthBills.filter(b=>b.status==='pagado').reduce((s,b)=>s+(b.amount||0),0);
+  const pend    = monthBills.filter(b=>b.status!=='pagado').reduce((s,b)=>s+(b.amount||0),0);
+  const venc    = monthBills.filter(b=>b.status==='vencido').length;
+
+  document.getElementById('dash-sub').textContent = `${MESES[m]} ${y}`;
+  document.getElementById('dash-stats').innerHTML = `
+    <div class="stat-box"><div class="stat-label">Total del mes</div><div class="stat-value td-mono">${fmtCLP(total)}</div></div>
+    <div class="stat-box"><div class="stat-label">Pagado</div><div class="stat-value green td-mono">${fmtCLP(pagado)}</div></div>
+    <div class="stat-box"><div class="stat-label">Pendiente</div><div class="stat-value orange td-mono">${fmtCLP(pend)}</div></div>
+    <div class="stat-box"><div class="stat-label">Facturas vencidas</div><div class="stat-value ${venc?'red':''} td-mono">${venc}</div></div>
+  `;
+
+  // Pending/overdue table
+  const alertBills = monthBills.filter(b => b.status !== 'pagado').sort((a,b) => (a.due||'') < (b.due||'') ? -1 : 1);
+  document.getElementById('dash-table').innerHTML = alertBills.length
+    ? alertBills.map(b => {
+        const p = getProp(b.propId);
+        return `<tr>
+          <td>${b.service}</td>
+          <td>${propDot(b.propId)}</td>
+          <td>${entTag(p.entityId)}</td>
+          <td class="td-mono">${b.due || '—'}</td>
+          <td class="td-right td-mono">${fmtCLP(b.amount)}</td>
+          <td>${badge(b.status)}</td>
+          <td><button class="btn btn-ghost btn-sm" onclick="quickPay('${b.id}')">✓ Pagar</button></td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">✓ Todo al día este mes</td></tr>';
+
+  // Progress by property
+  const visProps = entFilter ? props.filter(p => p.entityId === entFilter) : props;
+  document.getElementById('dash-progress').innerHTML = visProps.map(p => {
+    const pb = monthBills.filter(b => b.propId === p.id);
+    const ptotal = pb.reduce((s,b)=>s+(b.amount||0),0);
+    const ppaid  = pb.filter(b=>b.status==='pagado').reduce((s,b)=>s+(b.amount||0),0);
+    const pct    = ptotal ? Math.round(ppaid/ptotal*100) : 0;
+    return `<div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:12px">
+        <span>${propDot(p.id)}</span>
+        <span style="font-family:var(--mono);font-size:11px;color:var(--muted)">${pct}%</span>
+      </div>
+      <div style="height:5px;background:var(--bg);border-radius:2px">
+        <div style="height:5px;background:${p.color};border-radius:2px;width:${pct}%;transition:.3s"></div>
+      </div>
+    </div>`;
+  }).join('') || '<p style="color:var(--muted);font-size:12px">Sin propiedades</p>';
+}
+
+function quickPay(id) {
+  const b = bills.find(x => x.id === id);
+  if (!b) return;
+  b.status = 'pagado';
+  b.paidDate = new Date().toISOString().slice(0,10);
+  save(); renderDashboard();
+  toast('✓ Marcado como pagado');
+}
+
+// ══════════════════════════════════════════════════
+// CUENTAS
+// ══════════════════════════════════════════════════
+function updateMonthLabel() {
+  const el = document.getElementById('month-label');
+  if (el) el.textContent = `${MESES[curMonth]} ${curYear}`;
+}
+function prevMonth() { curMonth--; if(curMonth<0){curMonth=11;curYear--;} updateMonthLabel(); renderCuentas(); }
+function nextMonth() { curMonth++; if(curMonth>11){curMonth=0;curYear++;} updateMonthLabel(); renderCuentas(); }
+
+function populateFilters() {
+  // entity filters
+  ['f-entity','h-entity','dash-entity','flujo-entity'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const cur = sel.value;
+    if (sel.options.length <= 1) {
+      entities.forEach(e => {
+        const o = document.createElement('option');
+        o.value = e.id; o.textContent = e.name;
+        sel.appendChild(o);
+      });
+    }
+    sel.value = cur;
+  });
+  // prop filters
+  ['f-prop','h-prop'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">Todas las propiedades</option>' +
+      props.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+    sel.value = cur;
+  });
+}
+
+function renderCuentas() {
+  const entF  = document.getElementById('f-entity')?.value  || '';
+  const propF = document.getElementById('f-prop')?.value    || '';
+  const stF   = document.getElementById('f-status')?.value  || '';
+
+  let shown = bills.filter(b => b.month === curMonth && b.year === curYear);
+  if (entF)  shown = shown.filter(b => getProp(b.propId).entityId === entF);
+  if (propF) shown = shown.filter(b => b.propId === propF);
+  if (stF)   shown = shown.filter(b => b.status === stF);
+
+  const total  = shown.reduce((s,b)=>s+(b.amount||0),0);
+  const pagado = shown.filter(b=>b.status==='pagado').reduce((s,b)=>s+(b.amount||0),0);
+
+  const el = document.getElementById('cuentas-body');
+  if (!shown.length) {
+    el.innerHTML = `<div class="empty-state"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.3"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg><p>Sin cuentas para este período</p></div>`;
+    return;
+  }
+
+  // Group by entity then property
+  const grouped = {};
+  shown.forEach(b => {
+    const p   = getProp(b.propId);
+    const eid = p.entityId || '_';
+    if (!grouped[eid]) grouped[eid] = {};
+    if (!grouped[eid][b.propId]) grouped[eid][b.propId] = [];
+    grouped[eid][b.propId].push(b);
+  });
+
+  let html = '';
+  Object.entries(grouped).forEach(([eid, byProp]) => {
+    const e = getEntity(eid);
+    const eTotal = Object.values(byProp).flat().reduce((s,b)=>s+(b.amount||0),0);
+    html += `<div style="padding:10px 14px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+      <span style="width:9px;height:9px;border-radius:50%;background:${e.color}"></span>
+      <strong style="font-size:12px">${e.name}</strong>
+      <span style="margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--muted)">${fmtCLP(eTotal)}</span>
+    </div>`;
+    Object.entries(byProp).forEach(([propId, pbills]) => {
+      const p = getProp(propId);
+      const pTotal = pbills.reduce((s,b)=>s+(b.amount||0),0);
+      html += `<div style="padding:8px 14px 4px 30px;background:#fafaf8;border-bottom:1px solid var(--border2);display:flex;align-items:center;gap:8px">
+        <span style="width:6px;height:6px;border-radius:50%;background:${p.color}"></span>
+        <span style="font-size:11.5px;font-weight:500">${p.name}</span>
+        <span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted)">${fmtCLP(pTotal)}</span>
+      </div>`;
+      pbills.forEach(b => {
+        html += `<div style="display:flex;align-items:center;gap:0;border-bottom:1px solid var(--border2)">
+          <div style="padding:9px 14px 9px 44px;flex:1;font-size:12.5px">${b.service}</div>
+          <div style="padding:9px 10px;width:90px;font-family:var(--mono);font-size:11px;color:var(--muted)">${b.due||'—'}</div>
+          <div style="padding:9px 10px;width:110px;font-family:var(--mono);font-size:12.5px;font-weight:500;text-align:right">${fmtCLP(b.amount)}</div>
+          <div style="padding:9px 14px;width:110px">${badge(b.status)}</div>
+          <div style="padding:9px 10px;width:140px;font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${b.paidDate||b.notes||'—'}</div>
+          <div style="padding:9px 14px;display:flex;gap:4px">
+            ${b.status!=='pagado'?`<button class="btn btn-ghost btn-sm" onclick="quickPayFromBills('${b.id}')">✓</button>`:''}
+            <button class="btn btn-ghost btn-sm" onclick="openBillModal('${b.id}')">✎</button>
+            <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteBill('${b.id}')">×</button>
+          </div>
+        </div>`;
+      });
+    });
+  });
+
+  // Totals footer
+  html += `<div style="padding:10px 14px;background:var(--bg);border-top:1px solid var(--border);display:flex;gap:20px;justify-content:flex-end">
+    <span style="font-size:12px;color:var(--muted)">Total: <strong class="td-mono">${fmtCLP(total)}</strong></span>
+    <span style="font-size:12px;color:var(--green)">Pagado: <strong class="td-mono">${fmtCLP(pagado)}</strong></span>
+    <span style="font-size:12px;color:var(--orange)">Pendiente: <strong class="td-mono">${fmtCLP(total-pagado)}</strong></span>
+  </div>`;
+
+  el.innerHTML = html;
+}
+
+function quickPayFromBills(id) {
+  const b = bills.find(x => x.id === id);
+  if (!b) return;
+  b.status = 'pagado';
+  b.paidDate = new Date().toISOString().slice(0,10);
+  save(); renderCuentas();
+  toast('✓ Marcado como pagado');
+}
+
+// ══════════════════════════════════════════════════
+// BILL MODAL
+// ══════════════════════════════════════════════════
+function openBillModal(id) {
+  editingBillId = id || null;
+  const b = id ? bills.find(x => x.id === id) : null;
+  document.getElementById('bill-modal-title').textContent = b ? 'Editar cuenta' : 'Nueva cuenta';
+  document.getElementById('bill-id').value      = b?.id || '';
+  document.getElementById('bill-service').value = b?.service || SERVICES[0];
+  document.getElementById('bill-amount').value  = b?.amount || '';
+  document.getElementById('bill-due').value     = b?.due || '';
+  document.getElementById('bill-status').value  = b?.status || 'pendiente';
+  document.getElementById('bill-paiddate').value= b?.paidDate || '';
+  document.getElementById('bill-notes').value   = b?.notes || '';
+  // Populate prop select
+  const sel = document.getElementById('bill-prop');
+  sel.innerHTML = props.map(p => `<option value="${p.id}" ${b?.propId===p.id?'selected':''}>${p.name} (${getEntity(p.entityId).short})</option>`).join('');
+  if (!b && props.length) sel.value = props[0].id;
+  document.getElementById('bill-modal').classList.add('open');
+}
+function closeBillModal() { document.getElementById('bill-modal').classList.remove('open'); }
+function saveBill() {
+  const id = document.getElementById('bill-id').value || uid();
+  const bill = {
+    id,
+    service:  document.getElementById('bill-service').value,
+    propId:   document.getElementById('bill-prop').value,
+    amount:   parseFloat(document.getElementById('bill-amount').value) || 0,
+    due:      document.getElementById('bill-due').value,
+    status:   document.getElementById('bill-status').value,
+    paidDate: document.getElementById('bill-paiddate').value,
+    notes:    document.getElementById('bill-notes').value.trim(),
+    month:    curMonth,
+    year:     curYear,
+  };
+  const idx = bills.findIndex(b => b.id === id);
+  if (idx >= 0) bills[idx] = bill; else bills.push(bill);
+  save(); closeBillModal(); renderCuentas();
+  toast(idx >= 0 ? 'Cuenta actualizada' : 'Cuenta creada');
+}
+function deleteBill(id) {
+  if (!confirm('¿Eliminar esta cuenta?')) return;
+  bills = bills.filter(b => b.id !== id);
+  save(); renderCuentas();
+  toast('Cuenta eliminada', 'error');
+}
+
+// ══════════════════════════════════════════════════
+// CONTRIBUCIONES SII
+// ══════════════════════════════════════════════════
+function renderContrib() {
+  // Populate year select
+  const ySel = document.getElementById('contrib-year');
+  const now  = new Date();
+  if (ySel.options.length === 0) {
+    for (let y = now.getFullYear()+1; y >= now.getFullYear()-3; y--) {
+      const o = document.createElement('option');
+      o.value = y; o.textContent = y;
+      if (y === now.getFullYear()) o.selected = true;
+      ySel.appendChild(o);
+    }
+  }
+  const year = parseInt(ySel.value) || now.getFullYear();
+
+  const el = document.getElementById('contrib-body');
+  if (!props.length) {
+    el.innerHTML = `<div class="empty-state"><p>Agrega propiedades primero</p></div>`;
+    return;
+  }
+
+  el.innerHTML = entities.map(ent => {
+    const entProps = props.filter(p => p.entityId === ent.id);
+    if (!entProps.length) return '';
+    return `<div class="card" style="margin-bottom:16px;overflow:hidden">
+      <div class="card-header">
+        <span class="card-title" style="display:flex;align-items:center;gap:8px">
+          <span style="width:8px;height:8px;border-radius:50%;background:${ent.color}"></span>
+          ${ent.name}
+        </span>
+      </div>
+      <table>
+        <thead><tr>
+          <th>Propiedad</th><th>ROL SII</th>
+          ${CUOTAS.map(c=>`<th class="td-center">${c.nombre}<br><span style="font-weight:400;text-transform:none;font-size:10px">${c.mes}</span></th>`).join('')}
+        </tr></thead>
+        <tbody>
+          ${entProps.map(p => {
+            const cells = CUOTAS.map(c => {
+              const contrib = getContrib(p.id, year, c.key);
+              const status  = contrib?.status || 'pendiente';
+              const amount  = contrib?.amount || 0;
+              return `<td class="td-center" style="cursor:pointer" onclick="openSiiModal('${p.id}',${year},'${c.key}')">
+                <div>${badge(status)}</div>
+                ${amount ? `<div style="font-family:var(--mono);font-size:11px;margin-top:3px">${fmtCLP(amount)}</div>` : ''}
+              </td>`;
+            }).join('');
+            return `<tr>
+              <td>${propDot(p.id)}</td>
+              <td class="td-mono" style="color:var(--muted)">${p.rol || '—'}</td>
+              ${cells}
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  }).join('');
+}
+
+function openSiiModal(propId, year, key) {
+  editingSii = { propId, year, key };
+  const c = getContrib(propId, year, key) || {};
+  const cuota = CUOTAS.find(x => x.key === key);
+  const p = getProp(propId);
+  document.getElementById('sii-modal-title').textContent = `${p.name} — ${cuota.nombre} ${year}`;
+  document.getElementById('sii-amount').value   = c.amount || '';
+  document.getElementById('sii-status').value   = c.status || 'pendiente';
+  document.getElementById('sii-paiddate').value = c.paidDate || '';
+  document.getElementById('sii-ref').value      = c.ref || '';
+  document.getElementById('sii-notes').value    = c.notes || '';
+  document.getElementById('sii-modal').classList.add('open');
+}
+function closeSiiModal() { document.getElementById('sii-modal').classList.remove('open'); }
+function saveSii() {
+  if (!editingSii) return;
+  const { propId, year, key } = editingSii;
+  setContrib(propId, year, key, {
+    amount:   parseFloat(document.getElementById('sii-amount').value) || 0,
+    status:   document.getElementById('sii-status').value,
+    paidDate: document.getElementById('sii-paiddate').value,
+    ref:      document.getElementById('sii-ref').value.trim(),
+    notes:    document.getElementById('sii-notes').value.trim(),
+  });
+  closeSiiModal(); renderContrib();
+  toast('Cuota guardada');
+}
+
+// ══════════════════════════════════════════════════
+// FLUJO DE CAJA
+// ══════════════════════════════════════════════════
+function renderFlujo() {
+  populateFilters();
+  const entF = document.getElementById('flujo-entity')?.value || '';
+  const now  = new Date();
+  const rows = [];
+  let maxTotal = 0;
+  for (let i = -1; i <= 10; i++) {
+    let mo = now.getMonth() + i, yr = now.getFullYear();
+    while (mo < 0)  { mo += 12; yr--; }
+    while (mo > 11) { mo -= 12; yr++; }
+    let mb = bills.filter(b => b.month === mo && b.year === yr);
+    if (entF) mb = mb.filter(b => getProp(b.propId).entityId === entF);
+    const total  = mb.reduce((s,b)=>s+(b.amount||0),0);
+    const paid   = mb.filter(b=>b.status==='pagado').reduce((s,b)=>s+(b.amount||0),0);
+    const pend   = total - paid;
+    const isCur  = mo === now.getMonth() && yr === now.getFullYear();
+    if (total > maxTotal) maxTotal = total;
+    rows.push({ mo, yr, total, paid, pend, isCur });
+  }
+  maxTotal = maxTotal || 1;
+
+  document.getElementById('flujo-bars').innerHTML = rows.map(r => `
+    <div class="fc-bar-row ${r.isCur ? 'fc-current' : ''}">
+      <span class="fc-month">${MESES[r.mo].slice(0,3)} ${r.yr}</span>
+      <div class="fc-bar-wrap">
+        <div class="fc-bar" style="width:${Math.round(r.total/maxTotal*100)}%;background:${r.isCur?'var(--blue)':'var(--border)'}"></div>
+      </div>
+      <span class="fc-amount" style="color:${r.isCur?'var(--blue)':'inherit'}">${r.total?fmtCLP(r.total):'—'}</span>
+    </div>`).join('');
+
+  document.getElementById('flujo-table').innerHTML = rows.map(r => `
+    <tr style="${r.isCur?'background:#f5f7ff;font-weight:600':''}">
+      <td class="td-mono" style="font-size:12px">${MESES[r.mo].slice(0,3)} ${r.yr}${r.isCur?' ◀':''}</td>
+      <td class="td-right td-mono" style="font-size:12px">${r.total?fmtCLP(r.total):'—'}</td>
+      <td class="td-right td-mono" style="font-size:12px;color:var(--green)">${r.paid?fmtCLP(r.paid):'—'}</td>
+      <td class="td-right td-mono" style="font-size:12px;color:var(--orange)">${r.pend?fmtCLP(r.pend):'—'}</td>
+    </tr>`).join('');
+}
+
+// ══════════════════════════════════════════════════
+// RESUMEN MENSUAL
+// ══════════════════════════════════════════════════
+function initResumenSelects() {
+  const now = new Date();
+  const mSel = document.getElementById('res-month');
+  const ySel = document.getElementById('res-year');
+  if (!mSel || mSel.options.length > 0) return;
+  MESES.forEach((m,i) => {
+    const o = document.createElement('option');
+    o.value = i; o.textContent = m;
+    if (i === now.getMonth()) o.selected = true;
+    mSel.appendChild(o);
+  });
+  for (let y = now.getFullYear(); y >= now.getFullYear()-3; y--) {
+    const o = document.createElement('option');
+    o.value = y; o.textContent = y;
+    if (y === now.getFullYear()) o.selected = true;
+    ySel.appendChild(o);
+  }
+}
+
+function renderResumen() {
+  initResumenSelects();
+  const m = parseInt(document.getElementById('res-month')?.value ?? new Date().getMonth());
+  const y = parseInt(document.getElementById('res-year')?.value  ?? new Date().getFullYear());
+  const el = document.getElementById('resumen-body');
+  let totalGlobal = 0;
+
+  const html = `<div id="resumen-print">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding:20px 24px;background:var(--text);color:#f5f4f0;border-radius:6px">
+      <div>
+        <div style="font-family:var(--mono);font-size:18px;font-weight:500">PropAdmin</div>
+        <div style="font-size:14px;margin-top:4px;opacity:.7">Resumen de gastos — ${MESES[m]} ${y}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:11px;opacity:.5;text-transform:uppercase;letter-spacing:.6px">Generado</div>
+        <div style="font-family:var(--mono);font-size:12px;margin-top:2px">${new Date().toLocaleDateString('es-CL')}</div>
+      </div>
+    </div>
+    ${entities.map(ent => {
+      const entBills = bills.filter(b => {
+        const p = getProp(b.propId);
+        return b.month === m && b.year === y && p.entityId === ent.id;
+      });
+      if (!entBills.length) return '';
+      const total = entBills.reduce((s,b)=>s+(b.amount||0),0);
+      totalGlobal += total;
+      const pagados    = entBills.filter(b=>b.status==='pagado').length;
+      const pendientes = entBills.filter(b=>b.status!=='pagado').length;
+
+      const byProp = {};
+      entBills.forEach(b => {
+        if (!byProp[b.propId]) byProp[b.propId] = [];
+        byProp[b.propId].push(b);
+      });
+
+      return `<div class="card resumen-section" style="margin-bottom:16px;overflow:hidden">
+        <div class="resumen-entity-header">
+          <span style="width:9px;height:9px;border-radius:50%;background:${ent.color}"></span>
+          ${ent.name}
+          <span style="font-size:11px;color:var(--muted);font-weight:400">${pagados} pagados · ${pendientes} pendientes</span>
+          <span class="resumen-total">${fmtCLP(total)}</span>
+        </div>
+        <table>
+          <thead><tr><th>Propiedad</th><th>Servicio</th><th>Vencimiento</th><th class="td-right">Monto</th><th>Estado</th><th>Referencia</th></tr></thead>
+          <tbody>
+            ${Object.entries(byProp).map(([propId, pbills]) =>
+              pbills.map((b,i) => `<tr>
+                ${i===0 ? `<td rowspan="${pbills.length}">${propDot(propId)}</td>` : ''}
+                <td>${b.service}</td>
+                <td class="td-mono" style="font-size:11px">${b.due||'—'}</td>
+                <td class="td-right td-mono">${fmtCLP(b.amount)}</td>
+                <td>${badge(b.status)}</td>
+                <td style="font-size:11px;color:var(--muted)">${b.paidDate||b.notes||'—'}</td>
+              </tr>`).join('')
+            ).join('')}
+          </tbody>
+        </table>
+      </div>`;
+    }).join('')}
+    <div style="text-align:right;padding:14px 0;border-top:2px solid var(--border);font-family:var(--mono);font-size:16px;font-weight:500">
+      Total general: ${fmtCLP(totalGlobal)}
+    </div>
+  </div>`;
+  el.innerHTML = html;
+}
+
+function printResumen() {
+  const area = document.getElementById('resumen-print');
+  if (!area) { toast('Genera el resumen primero','error'); return; }
+  const m = parseInt(document.getElementById('res-month').value);
+  const y = parseInt(document.getElementById('res-year').value);
+  const w = window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <title>PropAdmin ${MESES[m]} ${y}</title>
+    <style>
+      body { font-family: 'Helvetica Neue',Arial,sans-serif; font-size:12px; color:#111; padding:24px; }
+      table { border-collapse:collapse; width:100%; margin-bottom:16px; }
+      th { background:#f0f0ee; padding:7px 10px; text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:.6px; border-bottom:1px solid #ddd; }
+      td { padding:8px 10px; border-bottom:1px solid #eee; }
+      .badge { display:inline-block; padding:2px 7px; border-radius:3px; font-size:10px; font-weight:600; }
+      .badge-pagado    { background:#eaf4ee; color:#1a6641; }
+      .badge-pendiente { background:#fdf0e6; color:#b84c00; }
+      .badge-vencido   { background:#fdeaea; color:#b81c1c; }
+      @media print { button { display:none; } }
+    </style></head><body>
+    <button onclick="window.print()" style="margin-bottom:16px;padding:8px 16px;background:#111;color:#fff;border:none;border-radius:4px;cursor:pointer">🖨 Imprimir / Guardar PDF</button>
+    ${area.innerHTML}</body></html>`);
+  w.document.close();
+}
+
+function exportResumen() {
+  const area = document.getElementById('resumen-print');
+  if (!area) { toast('Genera el resumen primero','error'); return; }
+  const m = parseInt(document.getElementById('res-month').value);
+  const y = parseInt(document.getElementById('res-year').value);
+  const blob = new Blob([`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>PropAdmin ${MESES[m]} ${y}</title>
+    <style>body{font-family:Helvetica,Arial,sans-serif;font-size:12px;color:#111;padding:24px}
+    table{border-collapse:collapse;width:100%}th{background:#f0f0ee;padding:7px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid #ddd}
+    td{padding:8px 10px;border-bottom:1px solid #eee}.badge{display:inline-block;padding:2px 7px;border-radius:3px;font-size:10px;font-weight:600}
+    .badge-pagado{background:#eaf4ee;color:#1a6641}.badge-pendiente{background:#fdf0e6;color:#b84c00}.badge-vencido{background:#fdeaea;color:#b81c1c}</style>
+    </head><body>${area.innerHTML}</body></html>`], {type:'text/html'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `PropAdmin_${MESES[m]}_${y}.html`;
+  a.click();
+  toast('✓ Archivo descargado');
+}
+
+// ══════════════════════════════════════════════════
+// HISTORIAL
+// ══════════════════════════════════════════════════
+function populateHistFilters() {
+  populateFilters();
+  const ySel = document.getElementById('h-year');
+  if (ySel && ySel.options.length === 0) {
+    const now = new Date();
+    for (let y = now.getFullYear(); y >= now.getFullYear()-4; y--) {
+      const o = document.createElement('option');
+      o.value = y; o.textContent = y;
+      if (y === now.getFullYear()) o.selected = true;
+      ySel.appendChild(o);
+    }
+  }
+}
+
+function renderHistorial() {
+  const entF  = document.getElementById('h-entity')?.value  || '';
+  const propF = document.getElementById('h-prop')?.value    || '';
+  const stF   = document.getElementById('h-status')?.value  || '';
+  const yrF   = document.getElementById('h-year')?.value    || '';
+
+  let shown = [...bills];
+  if (entF)  shown = shown.filter(b => getProp(b.propId).entityId === entF);
+  if (propF) shown = shown.filter(b => b.propId === propF);
+  if (stF)   shown = shown.filter(b => b.status === stF);
+  if (yrF)   shown = shown.filter(b => b.year === parseInt(yrF));
+
+  shown.sort((a,b) => {
+    if (a.year !== b.year) return b.year - a.year;
+    return b.month - a.month;
+  });
+
+  document.getElementById('h-count').textContent = `${shown.length} registro${shown.length!==1?'s':''}`;
+  document.getElementById('historial-body').innerHTML = shown.length
+    ? shown.map(b => {
+        const p = getProp(b.propId);
+        return `<tr>
+          <td class="td-mono" style="font-size:12px">${MESES[b.month].slice(0,3)} ${b.year}</td>
+          <td>${b.service}</td>
+          <td>${propDot(b.propId)}</td>
+          <td>${entTag(p.entityId)}</td>
+          <td class="td-right td-mono">${fmtCLP(b.amount)}</td>
+          <td>${badge(b.status)}</td>
+          <td class="td-mono" style="font-size:11px">${b.due||'—'}</td>
+          <td style="font-size:11px;color:var(--muted)">${b.paidDate||b.notes||'—'}</td>
+          <td>
+            <button class="btn btn-ghost btn-sm" onclick="openBillModal('${b.id}')">✎</button>
+            <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteBillFromHist('${b.id}')">×</button>
+          </td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--muted)">Sin registros</td></tr>';
+}
+
+function deleteBillFromHist(id) {
+  if (!confirm('¿Eliminar?')) return;
+  bills = bills.filter(b => b.id !== id);
+  save(); renderHistorial();
+  toast('Eliminado', 'error');
+}
+
+// ══════════════════════════════════════════════════
+// PROPIEDADES
+// ══════════════════════════════════════════════════
+function renderProps() {
+  const el = document.getElementById('props-body');
+  el.innerHTML = entities.map(ent => {
+    const entProps = props.filter(p => p.entityId === ent.id && !p.parentId);
+    const allEntProps = props.filter(p => p.entityId === ent.id);
+    if (!allEntProps.length) return '';
+    return `<div style="margin-bottom:24px">
+      <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px">
+        <span style="width:10px;height:10px;border-radius:50%;background:${ent.color}"></span>
+        <strong style="font-size:13px">${ent.name}</strong>
+        <span style="font-size:11px;color:var(--muted)">(${allEntProps.length} propiedades)</span>
+      </div>
+      ${entProps.length ? `
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Nombre</th><th>ROL SII</th><th>Comuna</th><th>Dirección</th><th></th></tr></thead>
+          <tbody>
+            ${entProps.map(p => {
+              const subs = props.filter(s => s.parentId === p.id);
+              return `<tr>
+                <td>${propDot(p.id)}</td>
+                <td class="td-mono" style="font-size:11px;color:var(--muted)">${p.rol||'—'}</td>
+                <td style="color:var(--muted);font-size:12px">${p.commune||'—'}</td>
+                <td style="color:var(--muted);font-size:12px">${p.address||'—'}</td>
+                <td style="display:flex;gap:4px;justify-content:flex-end">
+                  <button class="btn btn-ghost btn-sm" onclick="openPropModal('${p.id}')">✎ Editar</button>
+                  <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteProp('${p.id}')">× Eliminar</button>
+                </td>
+              </tr>
+              ${subs.map(s => `<tr style="background:#fafaf8">
+                <td style="padding-left:32px">${propDot(s.id)} <span style="font-size:10px;color:var(--muted);margin-left:4px">subunidad</span></td>
+                <td class="td-mono" style="font-size:11px;color:var(--muted)">${s.rol||'—'}</td>
+                <td style="color:var(--muted);font-size:12px">${s.commune||'—'}</td>
+                <td style="color:var(--muted);font-size:12px">${s.address||'—'}</td>
+                <td style="display:flex;gap:4px;justify-content:flex-end">
+                  <button class="btn btn-ghost btn-sm" onclick="openPropModal('${s.id}')">✎ Editar</button>
+                  <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteProp('${s.id}')">× Eliminar</button>
+                </td>
+              </tr>`).join('')}`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>` : `<p style="color:var(--muted);font-size:12px;padding:8px 0">Sin propiedades. <button class="btn btn-ghost btn-sm" onclick="openPropModal()">+ Agregar</button></p>`}
+    </div>`;
+  }).join('');
+}
+
+// ── PROP MODAL ──
+function renderColorPicker() {
+  document.getElementById('color-picker').innerHTML = COLORS.map(c =>
+    `<div class="color-swatch ${selColor===c?'sel':''}" style="background:${c}" onclick="selColor='${c}';renderColorPicker()"></div>`
+  ).join('');
+}
+
+function openPropModal(id) {
+  editingPropId = id || null;
+  const p = id ? props.find(x => x.id === id) : null;
+  selColor = p?.color || COLORS[0];
+  document.getElementById('prop-modal-title').textContent = p ? 'Editar propiedad' : 'Nueva propiedad';
+  document.getElementById('prop-id').value      = p?.id || '';
+  document.getElementById('prop-name').value    = p?.name || '';
+  document.getElementById('prop-rol').value     = p?.rol || '';
+  document.getElementById('prop-commune').value = p?.commune || '';
+  document.getElementById('prop-address').value = p?.address || '';
+  // Populate parent select
+  const pSel = document.getElementById('prop-parent');
+  pSel.innerHTML = '<option value="">— Propiedad independiente —</option>' +
+    props.filter(x => !x.parentId && x.id !== (p?.id||'')).map(x =>
+      `<option value="${x.id}" ${p?.parentId===x.id?'selected':''}>${x.name}</option>`
+    ).join('');
+  if (p?.parentId) pSel.value = p.parentId;
+  document.getElementById('prop-senders').value = (p?.senders || []).join(', ');
+  // Populate entity select
+  const sel = document.getElementById('prop-entity');
+  sel.innerHTML = entities.map(e => `<option value="${e.id}" ${p?.entityId===e.id?'selected':''}>${e.name}</option>`).join('');
+  renderColorPicker();
+  document.getElementById('prop-modal').classList.add('open');
+}
+function closePropModal() { document.getElementById('prop-modal').classList.remove('open'); }
+function saveProp() {
+  const name = document.getElementById('prop-name').value.trim();
+  if (!name) { toast('El nombre es requerido','error'); return; }
+  const id  = document.getElementById('prop-id').value || uid();
+  const prop = {
+    id, name, color: selColor,
+    entityId: document.getElementById('prop-entity').value,
+    rol:      document.getElementById('prop-rol').value.trim(),
+    commune:  document.getElementById('prop-commune').value.trim(),
+    address:  document.getElementById('prop-address').value.trim(),
+    parentId: document.getElementById('prop-parent').value || null,
+    senders:  document.getElementById('prop-senders').value.split(',').map(s=>s.trim().toLowerCase()).filter(Boolean),
+  };
+  const idx = props.findIndex(p => p.id === id);
+  if (idx >= 0) props[idx] = prop; else props.push(prop);
+  save(); closePropModal(); renderProps(); renderSidebar();
+  toast(idx >= 0 ? 'Propiedad actualizada' : 'Propiedad creada');
+}
+function deleteProp(id) {
+  if (!confirm('¿Eliminar propiedad y todas sus cuentas?')) return;
+  props  = props.filter(p => p.id !== id);
+  bills  = bills.filter(b => b.propId !== id);
+  save(); renderProps(); renderSidebar();
+  toast('Propiedad eliminada','error');
+}
+
+// ══════════════════════════════════════════════════
+// SEED DEMO DATA
+// ══════════════════════════════════════════════════
+function seedDemo() {
+  if (props.length) return;
+  props = [
+    { id:'p1', entityId:'e1', name:'Casa Santa María',    color:'#2d6a4f', rol:'',    commune:'Santiago',     address:'Santa María 123' },
+    { id:'p2', entityId:'e1', name:'Sitio Santuario',     color:'#386641', rol:'',    commune:'Colina',       address:'' },
+    { id:'p3', entityId:'e2', name:'La Parva',            color:'#1d3557', rol:'',    commune:'Lo Barnechea', address:'' },
+    { id:'p4', entityId:'e2', name:'Rapel',               color:'#457b9d', rol:'',    commune:'Rapel',        address:'' },
+    { id:'p5', entityId:'e2', name:'Copiapó',             color:'#1d6a8a', rol:'',    commune:'Copiapó',      address:'' },
+    { id:'p6', entityId:'e3', name:'Panguipulli',         color:'#9b2226', rol:'',    commune:'Panguipulli',  address:'' },
+    { id:'p7', entityId:'e3', name:'Depto. Paseo del Cid',color:'#c1440a', rol:'',    commune:'Santiago',     address:'Paseo del Cid 456' },
+  ];
+  const m = new Date().getMonth(), y = new Date().getFullYear();
+  bills = [
+    { id:uid(), propId:'p1', service:'Electricidad',  amount:82000,  due:`${y}-${String(m+1).padStart(2,'0')}-15`, status:'pendiente', month:m, year:y },
+    { id:uid(), propId:'p1', service:'Agua / Gas',    amount:41000,  due:`${y}-${String(m+1).padStart(2,'0')}-20`, status:'pagado', paidDate:`${y}-${String(m+1).padStart(2,'0')}-05`, month:m, year:y },
+    { id:uid(), propId:'p3', service:'Administración',amount:175000, due:`${y}-${String(m+1).padStart(2,'0')}-10`, status:'pendiente', month:m, year:y },
+    { id:uid(), propId:'p4', service:'Electricidad',  amount:34000,  due:`${y}-${String(m+1).padStart(2,'0')}-18`, status:'vencido',   month:m, year:y },
+    { id:uid(), propId:'p6', service:'Administración',amount:92000,  due:`${y}-${String(m+1).padStart(2,'0')}-10`, status:'pagado', paidDate:`${y}-${String(m+1).padStart(2,'0')}-08`, month:m, year:y },
+    { id:uid(), propId:'p7', service:'Administración',amount:118000, due:`${y}-${String(m+1).padStart(2,'0')}-10`, status:'pendiente', month:m, year:y },
+    { id:uid(), propId:'p7', service:'Internet / TV', amount:28000,  due:`${y}-${String(m+1).padStart(2,'0')}-22`, status:'pendiente', month:m, year:y },
+  ];
+  save();
+}
+
+// ══════════════════════════════════════════════════
+// GMAIL OAUTH
+// ══════════════════════════════════════════════════
+let gmailClientId   = localStorage.getItem('pa2_gmail_cid') || '';
+let gmailToken      = null; // { access_token, expires_at }
+let gmailTokenClient= null;
+let scannedEmails   = []; // raw emails from last scan
+let classifiedItems = []; // AI-classified items pending registration
+
+const GMAIL_SCOPE = 'https://www.googleapis.com/auth/gmail.readonly';
+
+function openGmailConfig() {
+  document.getElementById('gmail-client-id-input').value = gmailClientId;
+  document.getElementById('gmail-config-msg').textContent = '';
+  document.getElementById('gmail-config-modal').classList.add('open');
+}
+function closeGmailConfig() {
+  document.getElementById('gmail-config-modal').classList.remove('open');
+}
+
+function saveGmailClientId() {
+  const id = document.getElementById('gmail-client-id-input').value.trim();
+  if (!id.includes('.apps.googleusercontent.com')) {
+    document.getElementById('gmail-config-msg').textContent = '⚠ Client ID inválido — debe terminar en .apps.googleusercontent.com';
+    return;
+  }
+  gmailClientId = id;
+  localStorage.setItem('pa2_gmail_cid', id);
+  document.getElementById('gmail-config-msg').textContent = 'Abriendo autorización de Google...';
+  gmailAuthorize();
+}
+
+function gmailAuthorize() {
+  if (!gmailClientId) { openGmailConfig(); return; }
+  if (typeof google === 'undefined') {
+    toast('Google Identity Services no cargó. Verifica tu conexión.', 'error');
+    return;
+  }
+  gmailTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: gmailClientId,
+    scope: GMAIL_SCOPE,
+    callback: (resp) => {
+      if (resp.error) {
+        toast('Error de autorización: ' + resp.error, 'error');
+        return;
+      }
+      gmailToken = {
+        access_token: resp.access_token,
+        expires_at:   Date.now() + (resp.expires_in * 1000),
+      };
+      updateGmailStatusUI();
+      closeGmailConfig();
+      toast('✓ Gmail conectado');
+      // Enable scan buttons
+      document.getElementById('scan-btn').disabled  = false;
+      document.getElementById('scan-btn2').disabled = false;
+    },
+  });
+  gmailTokenClient.requestAccessToken();
+}
+
+function gmailIsConnected() {
+  return gmailToken && Date.now() < gmailToken.expires_at;
+}
+
+function gmailStatusClick() {
+  if (gmailIsConnected()) {
+    if (confirm('¿Desconectar Gmail?')) {
+      gmailToken = null;
+      updateGmailStatusUI();
+    }
+  } else {
+    gmailAuthorize();
+  }
+}
+
+function updateGmailStatusUI() {
+  const dot  = document.getElementById('gmail-dot');
+  const txt  = document.getElementById('gmail-status-txt');
+  const btn1 = document.getElementById('scan-btn');
+  const btn2 = document.getElementById('scan-btn2');
+  if (!dot) return;
+  const ok = gmailIsConnected();
+  dot.style.background  = ok ? 'var(--green)' : gmailClientId ? '#f0a04b' : 'var(--red)';
+  txt.textContent = ok ? 'Gmail conectado ✓' : gmailClientId ? 'Clic para autorizar' : 'Gmail no conectado';
+  if (btn1) btn1.disabled = !ok;
+  if (btn2) btn2.disabled = !ok;
+}
+
+// ── Raw Gmail API helpers ──────────────────────────────────────────────────────
+async function gmailSearch(query, maxResults = 20) {
+  if (!gmailIsConnected()) throw new Error('Gmail no autorizado');
+  const r = await fetch(
+    `https://www.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(query)}&maxResults=${maxResults}`,
+    { headers: { Authorization: `Bearer ${gmailToken.access_token}` } }
+  );
+  const d = await r.json();
+  if (d.error) throw new Error(d.error.message);
+  return d.messages || [];
+}
+
+async function gmailGetMessage(id) {
+  const r = await fetch(
+    `https://www.googleapis.com/gmail/v1/users/me/messages/${id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date`,
+    { headers: { Authorization: `Bearer ${gmailToken.access_token}` } }
+  );
+  const d = await r.json();
+  if (d.error) throw new Error(d.error.message);
+  const hdr = name => d.payload?.headers?.find(h => h.name === name)?.value || '';
+  return { id: d.id, from: hdr('From'), subject: hdr('Subject'), date: hdr('Date'), snippet: d.snippet || '' };
+}
+
+async function gmailGetBody(id) {
+  const r = await fetch(
+    `https://www.googleapis.com/gmail/v1/users/me/messages/${id}?format=full`,
+    { headers: { Authorization: `Bearer ${gmailToken.access_token}` } }
+  );
+  const d = await r.json();
+  if (d.error) return '';
+  // Extract plain text or html body
+  const parts = d.payload?.parts || [d.payload];
+  for (const part of parts) {
+    if (part?.mimeType === 'text/plain' && part?.body?.data) {
+      return atob(part.body.data.replace(/-/g,'+').replace(/_/g,'/')).slice(0, 2000);
+    }
+  }
+  for (const part of parts) {
+    if (part?.body?.data) {
+      try { return atob(part.body.data.replace(/-/g,'+').replace(/_/g,'/')).slice(0, 2000); } catch(e) {}
+    }
+  }
+  return '';
+}
+
+// ── Main scan flow ─────────────────────────────────────────────────────────────
+async function scanGmail() {
+  if (!gmailIsConnected()) { gmailAuthorize(); return; }
+
+  const days     = document.getElementById('scan-days').value;
+  const fromVal  = document.getElementById('scan-from').value.trim();
+  const keywords = document.getElementById('scan-keywords').value.trim();
+  const resultsEl= document.getElementById('gmail-results');
+  const pendEl   = document.getElementById('pending-classify');
+
+  // Build query
+  const parts = ['(cobro OR aviso OR "gastos comunes" OR administración OR pago OR factura OR "aviso de cobro" OR "cuenta de cobro" OR SII OR TGR OR contribuciones OR arriendo)'];
+  if (fromVal)  parts.push(fromVal.includes('@') ? `from:${fromVal}` : `from:(${fromVal})`);
+  if (keywords) parts.push(keywords);
+  parts.push(`newer_than:${days}d`);
+  const query = parts.join(' ');
+
+  resultsEl.innerHTML = `<div class="empty-state" style="padding:48px">
+    <div style="width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--text);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px"></div>
+    <p>Buscando en Gmail...</p>
+    <p style="font-size:11px;color:var(--muted);margin-top:4px">${query}</p>
+  </div>
+  <style>@keyframes spin{to{transform:rotate(360deg)}}</style>`;
+  pendEl.style.display = 'none';
+
+  try {
+    // 1. Search
+    const messages = await gmailSearch(query, 25);
+    if (!messages.length) {
+      resultsEl.innerHTML = `<div class="empty-state" style="padding:48px"><p>No se encontraron correos con esos parámetros.</p><p style="font-size:11px;color:var(--muted);margin-top:4px">Prueba ampliando el período o dejando los campos vacíos.</p></div>`;
+      return;
+    }
+
+    // 2. Fetch metadata for all (parallel, max 20)
+    resultsEl.innerHTML = `<div class="empty-state" style="padding:36px"><div style="width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--text);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px"></div><p>Obteniendo ${messages.length} correos...</p></div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>`;
+    const metas = await Promise.all(messages.slice(0,20).map(m => gmailGetMessage(m.id)));
+
+    // 3. Fetch bodies for first 10 (to help AI extract amounts)
+    const bodiesPromises = metas.slice(0,10).map(m => gmailGetBody(m.id));
+    const bodies = await Promise.all(bodiesPromises);
+    metas.forEach((m,i) => { if (bodies[i]) m.body = bodies[i]; });
+
+    scannedEmails = metas;
+
+    // 4. Show raw results immediately
+    renderScanResults(metas, null);
+
+    // 5. Classify with AI
+    resultsEl.insertAdjacentHTML('afterbegin', `<div id="ai-progress" style="padding:10px 14px;background:var(--blue-bg);border-bottom:1px solid var(--border);font-size:12px;color:var(--blue)">
+      🤖 Clasificando con IA... (esto puede tomar unos segundos)
+    </div>`);
+
+    const classified = await classifyWithAI(metas);
+    classifiedItems = classified;
+
+    document.getElementById('ai-progress')?.remove();
+    renderScanResults(metas, classified);
+    renderPendingClassify(classified);
+
+  } catch(err) {
+    resultsEl.innerHTML = `<div class="empty-state" style="padding:48px;color:var(--red)"><p>Error: ${err.message}</p></div>`;
+    console.error(err);
+  }
+}
+
+// ── AI classification ──────────────────────────────────────────────────────────
+function matchBySender(emailFrom) {
+  const from = emailFrom.toLowerCase();
+  for (const p of props) {
+    if ((p.senders || []).some(s => from.includes(s))) return p.id;
+  }
+  return null;
+}
+
+async function classifyWithAI(emails) {
+  const propList = props.map(p => {
+    const e = getEntity(p.entityId);
+    const senders = (p.senders||[]).length ? ` | remitentes: ${p.senders.join(', ')}` : '';
+    return `${p.id} | ${p.name} | ${e.name}${p.commune ? ' | ' + p.commune : ''}${senders}`;
+  }).join('\n');
+
+  const emailSummaries = emails.map((e,i) => {
+    const senderMatch = matchBySender(e.from);
+    const hint = senderMatch ? ` [REMITENTE COINCIDE CON PROPIEDAD: ${getProp(senderMatch).name} (${senderMatch})]` : '';
+    return `[${i}] ID:${e.id}\nDe: ${e.from}${hint}\nAsunto: ${e.subject}\nFecha: ${e.date}\nResumen: ${e.snippet}${e.body ? '\nContenido: ' + e.body.slice(0,500) : ''}`;
+  }).join('\n\n---\n\n');
+
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'anthropic-dangerous-direct-browser-access': 'true',
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2000,
+      system: `Eres un asistente que clasifica correos de cobro de propiedades.
+Analiza cada correo y extrae: concepto, monto en CLP, y qué propiedad corresponde.
+Responde SOLO con JSON válido, sin texto adicional, sin markdown.
+Formato: {"items":[{"emailId":"id","esCobro":true,"concepto":"string","monto":0,"propId":"id o null","confianza":"alta|media|baja","servicio":"Electricidad|Agua / Gas|Internet / TV|Administración|Seguro|Impuesto predial|Otro"}]}`,
+      messages: [{
+        role: 'user',
+        content: `Propiedades disponibles:\n${propList}\n\nCorreos a clasificar:\n${emailSummaries}\n\nClasifica cada correo que sea un aviso/cobro. Para los que no sean cobros, incluye esCobro:false.`,
+      }],
+    }),
+  });
+
+  const data = await resp.json();
+  const text = (data.content || []).filter(c => c.type === 'text').map(c => c.text).join('');
+  const match = text.match(/\{[\s\S]*"items"[\s\S]*\}/);
+  if (!match) return [];
+  try {
+    return JSON.parse(match[0]).items || [];
+  } catch(e) {
+    return [];
+  }
+}
+
+// ── Render results ─────────────────────────────────────────────────────────────
+function renderScanResults(emails, classified) {
+  const el = document.getElementById('gmail-results');
+  el.innerHTML = `
+    <div style="padding:10px 14px;background:var(--bg);border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px">
+      <strong style="color:var(--text)">${emails.length} correos encontrados</strong>
+      ${classified ? `· <span style="color:var(--green)">${classified.filter(c=>c.esCobro).length} identificados como cobros</span>` : '· Clasificando...'}
+    </div>
+    <table>
+      <thead><tr>
+        <th style="width:160px">Remitente</th>
+        <th>Asunto</th>
+        <th style="width:95px">Fecha</th>
+        <th style="width:110px">Concepto IA</th>
+        <th style="width:95px" class="td-right">Monto IA</th>
+        <th style="width:150px">Propiedad sugerida</th>
+        <th style="width:80px"></th>
+      </tr></thead>
+      <tbody>
+        ${emails.map((e,i) => {
+          const cl = classified?.find(c => c.emailId === e.id);
+          const p  = cl?.propId ? getProp(cl.propId) : null;
+          return `<tr id="erow-${e.id}" style="${cl&&!cl.esCobro?'opacity:.45':''}">
+            <td style="font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e.from}">${e.from.replace(/<.*>/,'').trim()}</td>
+            <td style="font-size:12px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e.subject}">${e.subject}</td>
+            <td style="font-size:11px;color:var(--muted)">${formatEmailDate(e.date)}</td>
+            <td style="font-size:11px">${cl?.concepto || (classified ? '—' : '...')}</td>
+            <td class="td-right td-mono" style="font-size:12px">${cl?.monto ? fmtCLP(cl.monto) : (classified ? '—' : '...')}</td>
+            <td style="font-size:11px">
+              ${p ? `<span class="prop-dot" style="--dot-color:${p.color}">${p.name}</span>` : (classified ? '<span style="color:var(--muted)">Sin coincidencia</span>' : '...')}
+              ${cl?.confianza === 'alta' ? ' <span style="color:var(--green);font-size:10px">●</span>' : ''}
+              ${matchBySender(e.from) ? ' <span style="color:var(--blue);font-size:10px" title="Coincide por remitente">✉</span>' : ''}
+            </td>
+            <td>
+              ${cl?.esCobro ? `<button class="btn btn-ghost btn-sm" onclick="openRegisterModal('${e.id}')" style="font-size:11px">+ Registrar</button>` : ''}
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+}
+
+function renderPendingClassify(classified) {
+  const cobros = classified.filter(c => c.esCobro && c.propId && c.monto && c.confianza === 'alta');
+  const pendEl = document.getElementById('pending-classify');
+  if (!cobros.length) { pendEl.style.display = 'none'; return; }
+
+  pendEl.style.display = 'block';
+  document.getElementById('pending-list').innerHTML = cobros.map(c => {
+    const email = scannedEmails.find(e => e.id === c.emailId) || {};
+    const p = getProp(c.propId);
+    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border2)" id="pend-${c.emailId}">
+      <span style="width:7px;height:7px;border-radius:50%;background:${p.color};flex-shrink:0"></span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12.5px;font-weight:500">${c.concepto} — ${p.name}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${email.from?.replace(/<.*>/,'').trim() || ''} · ${formatEmailDate(email.date||'')}</div>
+      </div>
+      <div style="font-family:var(--mono);font-size:13px;font-weight:500">${fmtCLP(c.monto)}</div>
+      <span class="badge badge-pendiente">Pendiente</span>
+      <button class="btn btn-primary btn-sm" onclick="registerItem('${c.emailId}')">✓ Registrar</button>
+      <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="dismissItem('${c.emailId}')">×</button>
+    </div>`;
+  }).join('');
+}
+
+// ── Register modal ─────────────────────────────────────────────────────────────
+let registeringEmailId = null;
+function openRegisterModal(emailId) {
+  registeringEmailId = emailId;
+  const cl    = classifiedItems.find(c => c.emailId === emailId) || {};
+  const email = scannedEmails.find(e => e.id === emailId) || {};
+
+  // Reuse the bill modal
+  document.getElementById('bill-modal-title').textContent = 'Registrar aviso de cobro';
+  document.getElementById('bill-id').value = '';
+  document.getElementById('bill-service').value  = cl.servicio || 'Otro';
+  document.getElementById('bill-amount').value   = cl.monto || '';
+  document.getElementById('bill-due').value      = '';
+  document.getElementById('bill-status').value   = 'pendiente';
+  document.getElementById('bill-paiddate').value = '';
+  document.getElementById('bill-notes').value    = (email.from?.replace(/<.*>/,'').trim() || '') + (email.subject ? ' — ' + email.subject.slice(0,60) : '');
+
+  const sel = document.getElementById('bill-prop');
+  sel.innerHTML = props.map(p => `<option value="${p.id}" ${cl.propId===p.id?'selected':''}>${p.name} (${getEntity(p.entityId).short})</option>`).join('');
+  if (cl.propId) sel.value = cl.propId;
+
+  document.getElementById('bill-modal').classList.add('open');
+}
+
+function registerItem(emailId) {
+  const cl    = classifiedItems.find(c => c.emailId === emailId);
+  const email = scannedEmails.find(e => e.id === emailId);
+  if (!cl || !cl.propId) return;
+
+  const bill = {
+    id:       uid(),
+    service:  cl.servicio || 'Otro',
+    propId:   cl.propId,
+    amount:   cl.monto || 0,
+    due:      '',
+    status:   'pendiente',
+    paidDate: '',
+    notes:    email?.from?.replace(/<.*>/,'').trim() + (email?.subject ? ' — ' + email.subject.slice(0,60) : ''),
+    month:    curMonth,
+    year:     curYear,
+  };
+  bills.push(bill);
+  save();
+  document.getElementById('pend-' + emailId)?.remove();
+  const erow = document.getElementById('erow-' + emailId);
+  if (erow) erow.style.opacity = '.4';
+  toast('✓ Registrado en ' + getProp(cl.propId).name);
+
+  // Hide pending section if empty
+  if (!document.getElementById('pending-list')?.children.length) {
+    document.getElementById('pending-classify').style.display = 'none';
+  }
+}
+
+function dismissItem(emailId) {
+  document.getElementById('pend-' + emailId)?.remove();
+}
+
+function registerAllMatched() {
+  const cobros = classifiedItems.filter(c => c.esCobro && c.propId && c.monto && c.confianza === 'alta');
+  cobros.forEach(c => {
+    const email = scannedEmails.find(e => e.id === c.emailId);
+    bills.push({
+      id:       uid(),
+      service:  c.servicio || 'Otro',
+      propId:   c.propId,
+      amount:   c.monto || 0,
+      due:      '',
+      status:   'pendiente',
+      paidDate: '',
+      notes:    email?.from?.replace(/<.*>/,'').trim() + (email?.subject ? ' — ' + email.subject.slice(0,60) : ''),
+      month:    curMonth,
+      year:     curYear,
+    });
+  });
+  save();
+  document.getElementById('pending-classify').style.display = 'none';
+  toast(`✓ ${cobros.length} cuentas registradas`);
+}
+
+function formatEmailDate(dateStr) {
+  if (!dateStr) return '—';
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('es-CL', { day:'2-digit', month:'short' });
+  } catch(e) { return dateStr.slice(0,10); }
+}
+
+// ══════════════════════════════════════════════════
+// GUARDAR APP CON DATOS
+// ══════════════════════════════════════════════════
+function saveAppWithData() {
+  // Read current HTML
+  const html = document.documentElement.outerHTML;
+
+  // Build data snapshot
+  const snapshot = {
+    pa2_props:    JSON.stringify(props),
+    pa2_bills:    JSON.stringify(bills),
+    pa2_contribs: JSON.stringify(contribs),
+    pa2_entities: JSON.stringify(entities),
+    pa2_gmail_cid: gmailClientId || '',
+  };
+
+  // Inject a script that pre-loads localStorage before the app runs
+  const loaderScript = `<script id="pa-data-loader">
+(function(){
+  var d=${JSON.stringify(snapshot)};
+  for(var k in d){ try{ localStorage.setItem(k,d[k]); }catch(e){} }
+})();
+<\/script>`;
+
+  // Insert loader right after <head> (before any other scripts load)
+  const injected = html.replace(/<head>/, '<head>' + loaderScript);
+
+  const blob = new Blob([injected], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const d = new Date();
+  a.download = `propadmin_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.html`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('✓ App guardada con todos los datos');
+}
+
+// ══════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════
+ensureEntities();
+seedDemo();
+renderSidebar();
+showView('dashboard');
+updateMonthLabel();
+updateGmailStatusUI();
+</script>
+</body>
+</html>
